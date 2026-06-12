@@ -34,7 +34,7 @@ public final class Constants {
 
     // Captura automática
     public static final int COUNTDOWN_SECONDS = 3;
-    public static final int COUNTDOWN_GRACE_FRAMES = 15;
+    public static final int COUNTDOWN_GRACE_FRAMES = 30;
 
     // Calidad de imagen
     public static final double MIN_BRIGHTNESS = 60.0;
@@ -48,7 +48,7 @@ public final class Constants {
     public static final double MAX_TILT_DEGREES = 25.0;
     public static final int EDGE_MARGIN_PX = 10;
     public static final int MIN_FACE_SIZE_PX = 80;
-    public static final int GUIDE_TOLERANCE_PX = 35;
+    public static final int GUIDE_TOLERANCE_PX = 50;
 
     // Reconocimiento facial (correlación de píxeles: -1 a 1)
     public static final int FACE_SAMPLE_SIZE = 200;
@@ -56,23 +56,26 @@ public final class Constants {
 
     // Documento
     public static final double DOC_MIN_BRIGHTNESS = 45.0;
-    public static final double DOC_MIN_BLUR = 30.0;
+    public static final double DOC_MIN_BLUR = 20.0;
     public static final double DOC_MIN_EDGE_DENSITY = 0.035;
     public static final double DOC_MAX_CARD_FACE_RATIO = 0.50;
     // Foto del titular en la cédula: tamaño y posición esperados
     public static final double CARD_PHOTO_MIN_HEIGHT_RATIO = 0.25;
     public static final double CARD_PHOTO_MAX_HEIGHT_RATIO = 0.80;
-    public static final double CARD_PHOTO_MAX_CENTER_X = 0.60;
+    public static final double CARD_PHOTO_MAX_CENTER_X = 0.65;
     // Reconocimiento de documento (correlación de píxeles)
     public static final double DOC_RECOGNITION_THRESHOLD = 0.55;
     // Si la "posterior" se parece tanto a la frontal, es la misma cara
     public static final double DOC_SAME_SIDE_THRESHOLD = 0.70;
 
     // Marcas distintivas de la cédula digital colombiana
+    // Frontal: fondo mayormente blanco
+    public static final double CARD_WHITE_MIN_RATIO = 0.28;
     // Frontal: encabezado rojo "REPUBLICA DE COLOMBIA" (franja superior)
-    public static final double CARD_RED_HEADER_MIN_RATIO = 0.010;
-    // Posterior: código QR (cuadrante superior derecho, alta densidad)
-    public static final double CARD_QR_MIN_DENSITY = 0.10;
+    public static final double CARD_RED_HEADER_MIN_RATIO = 0.008;
+    // La frontal debe cumplir al menos N de las 3 marcas de color
+    // (blanco, rojo, bandera). La foto del titular siempre es obligatoria.
+    public static final int CARD_FRONT_MIN_MARKS = 2;
     // Posterior: zona MRZ con texto <<< (franja inferior)
     public static final double CARD_MRZ_MIN_DENSITY = 0.06;
 }

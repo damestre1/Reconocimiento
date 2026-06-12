@@ -39,21 +39,12 @@ public class DocumentCaptureService {
         this.imageProcessor = imageProcessor;
     }
 
-    /**
-     * Captura la cara FRONTAL sin guardarla (el llamador decide
-     * guardar con saveCard tras verificar duplicados).
-     */
     public Mat captureFrontProbe() {
         return capture(DocumentSide.FRONT,
                 "Encaje la cara FRONTAL de la cedula",
                 null);
     }
 
-    /**
-     * Captura la cara POSTERIOR. Compara cada captura contra la
-     * frontal ya guardada del usuario: si es la misma cara, la
-     * rechaza y pide voltear el documento.
-     */
     public Mat captureBackProbe(String nationalId) {
 
         Mat frontRef = null;
@@ -79,7 +70,6 @@ public class DocumentCaptureService {
         return result;
     }
 
-    /** Guarda una captura como photos/cedula_sufijo.jpg. */
     public String saveCard(Mat card, String nationalId, String suffix) {
         String path = Constants.PHOTOS_DIR
                 + File.separator
@@ -152,29 +142,36 @@ public class DocumentCaptureService {
                              Mat frontReference,
                              CountDownLatch finished) {
 
-        Mat frame = new Mat();
-        Mat cleanFrame = new Mat();
+        Mat raw = new Mat();
+        Mat cleanFrame = new Mat();     // SIN espejo: validar y guardar
+        Mat display = new Mat();        // CON espejo: solo para mostrar
+        Mat displayClean = new Mat();
         long countdownStart = -1;
         int badFrames = 0;
 
         try {
             while (running) {
 
-                if (!camera.readFrame(frame)) {
+                if (!camera.readFrame(raw)) {
                     continue;
                 }
 
-                // Quitar el modo espejo
-                Core.flip(frame, frame, 1);
-                frame.copyTo(cleanFrame);
+                // El documento se valida y guarda SIN espejo, para que
+                // la foto del titular quede a la izquierda y el texto
+                // sea legible, tal como en la cédula real.
+                raw.copyTo(cleanFrame);
 
-                Rect guide = cardGuideRect(frame);
+                // La pantalla sí se muestra en espejo, porque así
+                // mover la cédula resulta intuitivo para la persona.
+                Core.flip(raw, display, 1);
+                display.copyTo(displayClean);
 
-                // Validación en vivo
+                Rect guide = cardGuideRect(cleanFrame);
+
+                // Validación en vivo sobre la imagen SIN espejo
                 Mat card = cleanFrame.submat(guide);
                 String error = scanner.checkDocument(card, side);
 
-                // La posterior no puede ser la frontal repetida.
                 if (error == null
                         && side == DocumentSide.BACK
                         && frontReference != null
@@ -213,22 +210,22 @@ public class DocumentCaptureService {
                 }
                 card.release();
 
-                // ---- Interfaz ----
-                OverlayRenderer.darkenOutside(frame, cleanFrame, guide);
-                OverlayRenderer.drawCornerGuide(frame, guide,
+                // ---- Interfaz (sobre la imagen en espejo) ----
+                OverlayRenderer.darkenOutside(display, displayClean, guide);
+                OverlayRenderer.drawCornerGuide(display, guide,
                         ready ? OverlayRenderer.OK : OverlayRenderer.WHITE);
-                OverlayRenderer.drawTopBanner(frame, instruction);
+                OverlayRenderer.drawTopBanner(display, instruction);
 
                 String status = ready
                         ? "Perfecto, mantenga la cedula quieta..."
                         : error;
-                OverlayRenderer.drawBottomBanner(frame, status, ready);
+                OverlayRenderer.drawBottomBanner(display, status, ready);
 
                 if (counting && secondsLeft > 0 && running) {
-                    OverlayRenderer.drawCountdown(frame, secondsLeft);
+                    OverlayRenderer.drawCountdown(display, secondsLeft);
                 }
 
-                updateWindow(frame);
+                updateWindow(display);
 
                 try {
                     Thread.sleep(Constants.FRAME_DELAY_MS);
@@ -239,8 +236,10 @@ public class DocumentCaptureService {
             }
         } finally {
             camera.release();
-            frame.release();
+            raw.release();
             cleanFrame.release();
+            display.release();
+            displayClean.release();
 
             SwingUtilities.invokeLater(() -> {
                 if (window != null) {

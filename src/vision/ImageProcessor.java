@@ -58,11 +58,7 @@ public class ImageProcessor {
         return blurVariance(source) < Constants.MIN_BLUR_VARIANCE;
     }
 
-    /**
-     * Proporción de píxeles que son borde (0.0 - 1.0). Una cédula
-     * tiene mucho texto y gráficos, por lo que su densidad de bordes
-     * es alta; un fondo vacío (pared, mesa) da valores muy bajos.
-     */
+    /** Proporción de píxeles que son borde (0.0 - 1.0). */
     public double edgeDensity(Mat source) {
         Mat gray = toGray(source);
         Mat edges = new Mat();
@@ -76,37 +72,68 @@ public class ImageProcessor {
         return density;
     }
 
-
     /**
-     * Proporción de píxeles rojos en la región (0.0 - 1.0).
-     * Se usa para detectar el encabezado rojo "REPÚBLICA DE COLOMBIA"
-     * de la cédula digital colombiana.
+     * Proporción de píxeles dentro de un rango HSV (0.0 - 1.0).
+     * H: 0-180, S: 0-255, V: 0-255.
      */
-    public double redRatio(Mat source) {
+    public double colorRatio(Mat source,
+                             Scalar lowerHsv,
+                             Scalar upperHsv) {
         Mat hsv = new Mat();
         Imgproc.cvtColor(source, hsv, Imgproc.COLOR_BGR2HSV);
 
-        // El rojo en HSV ocupa dos rangos de matiz (0-10 y 170-180)
-        Mat mask1 = new Mat();
-        Mat mask2 = new Mat();
-        Core.inRange(hsv,
-                new Scalar(0, 80, 70),
-                new Scalar(10, 255, 255), mask1);
-        Core.inRange(hsv,
-                new Scalar(170, 80, 70),
-                new Scalar(180, 255, 255), mask2);
-
         Mat mask = new Mat();
-        Core.bitwise_or(mask1, mask2, mask);
+        Core.inRange(hsv, lowerHsv, upperHsv, mask);
 
         double ratio = (double) Core.countNonZero(mask)
                 / (mask.cols() * mask.rows());
 
         hsv.release();
-        mask1.release();
-        mask2.release();
         mask.release();
+        return ratio;
+    }
 
+    /**
+     * Rojo: ocupa dos rangos de matiz en HSV. Rangos amplios y con
+     * saturación baja para tolerar cámaras de baja calidad que
+     * "lavan" los colores.
+     */
+    public double redRatio(Mat source) {
+        return colorRatio(source,
+                new Scalar(0, 45, 50), new Scalar(12, 255, 255))
+                + colorRatio(source,
+                new Scalar(166, 45, 50), new Scalar(180, 255, 255));
+    }
+
+    public double yellowRatio(Mat source) {
+        return colorRatio(source,
+                new Scalar(15, 50, 90), new Scalar(38, 255, 255));
+    }
+
+    public double blueRatio(Mat source) {
+        return colorRatio(source,
+                new Scalar(90, 45, 45), new Scalar(135, 255, 255));
+    }
+
+    /**
+     * Proporción de píxeles claros y poco saturados (fondo blanco).
+     * La cédula digital es mayormente blanca; una tarjeta bancaria
+     * oscura o una licencia verdosa no lo son.
+     */
+    public double whitenessRatio(Mat source) {
+        Mat hsv = new Mat();
+        Imgproc.cvtColor(source, hsv, Imgproc.COLOR_BGR2HSV);
+
+        Mat mask = new Mat();
+        Core.inRange(hsv,
+                new Scalar(0, 0, 150),
+                new Scalar(180, 60, 255), mask);
+
+        double ratio = (double) Core.countNonZero(mask)
+                / (mask.cols() * mask.rows());
+
+        hsv.release();
+        mask.release();
         return ratio;
     }
 
