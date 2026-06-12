@@ -5,8 +5,8 @@ import model.FaceRecord;
 import model.User;
 import org.opencv.core.Mat;
 import repository.AccessRecordRepository;
-import repository.FileUserRepository;
-import repository.InMemoryAccessRecordRepository;
+import repository.SQLiteUserRepository;
+import repository.SQLiteAccessRecordRepository;
 import repository.UserRepository;
 import service.AccessControlService;
 import service.DocumentCaptureService;
@@ -114,9 +114,9 @@ public class Main {
     }
 
     private static void initServices() {
-        userRepository = new FileUserRepository();
+        userRepository = new SQLiteUserRepository();
         AccessRecordRepository accessRepository =
-                new InMemoryAccessRecordRepository();
+                new SQLiteAccessRecordRepository();
 
         ImageProcessor imageProcessor = new ImageProcessor();
         FaceDetector faceDetector = new FaceDetector();
