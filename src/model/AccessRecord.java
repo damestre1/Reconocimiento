@@ -18,10 +18,22 @@ public class AccessRecord {
                         AccessMethod method,
                         AccessResult result,
                         String detail) {
+        this(id, nationalId, LocalDate.now(),
+                LocalTime.now().withNano(0), method, result, detail);
+    }
+
+    /** Constructor completo: usado al cargar registros desde la BD. */
+    public AccessRecord(String id,
+                        String nationalId,
+                        LocalDate date,
+                        LocalTime time,
+                        AccessMethod method,
+                        AccessResult result,
+                        String detail) {
         this.id = id;
         this.nationalId = nationalId;
-        this.date = LocalDate.now();
-        this.time = LocalTime.now().withNano(0);
+        this.date = date;
+        this.time = time;
         this.method = method;
         this.result = result;
         this.detail = detail;
